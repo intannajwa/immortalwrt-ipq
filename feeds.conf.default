@@ -1,3 +1,5 @@
+src-git wwan https://github.com/immortalwrt/wwan-packages.git
+src-git custom_ipq https://github.com/dotywrt/owrt-packages.git
 src-git packages https://github.com/immortalwrt/packages.git;openwrt-24.10
 src-git luci https://github.com/immortalwrt/luci.git;openwrt-24.10
 src-git routing https://github.com/openwrt/routing.git;openwrt-24.10
