@@ -151,7 +151,7 @@ jobs:
         run: |
           mkdir -p upload
           tar czf Package.tar.gz backup
-          zip -P "${{ secrets.ZIP_PASSWORD }}" Package.zip Package.tar.gz
+          7z a -tzip -p"${{ secrets.ZIP_PASSWORD }}" -mem=AES256 upload/Package.zip Package.tar.gz
           mv Package.zip upload/
        
       - name: Create a release
