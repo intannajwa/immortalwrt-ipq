@@ -1,0 +1,56 @@
+name: Cleanup Old Workflows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download GitHub CLI
+        run: |
+          curl -sSL https://github.com/cli/cli/releases/download/v2.47.0/gh_2.47.0_linux_amd64.tar.gz | tar -xz
+          sudo cp gh_2.47.0_linux_amd64/bin/gh /usr/local/bin/
+
+      - name: Authenticate with GITHUB_TOKEN
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Delete all but latest workflow runs
+        run: |
+          gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/actions/runs?per_page=100 | \
+          jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1:][] | .id' | \
+          while read run_id; do
+            echo "Deleting workflow run ID: $run_id"
+            gh api --method DELETE /repos/${{ github.repository }}/actions/runs/$run_id
+          done
+      - name: Delete old tags (keep latest)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAGS=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name')
+          LATEST_TAG=$(echo "$TAGS" | head -n 1)
+          for TAG in $TAGS; do
+            if [ "$TAG" != "$LATEST_TAG" ]; then
+              echo "Deleting tag: $TAG"
+              git push origin :refs/tags/$TAG
+            fi
+          done
+
+      - name: Delete old releases (keep latest)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name' | head -n 1)
+          RELEASES=$(gh release list --limit 1000 | awk '{print $1}')
+          for REL in $RELEASES; do
+            if [ "$REL" != "$LATEST_TAG" ]; then
+              echo "Deleting release: $REL"
+              gh release delete "$REL" -y
+            fi
+          done
