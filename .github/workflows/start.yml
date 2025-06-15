@@ -1,4 +1,4 @@
-name: AW1000-24.10-NSS
+name: Build Custom Firmware
 on:
   workflow_dispatch:
     inputs:
