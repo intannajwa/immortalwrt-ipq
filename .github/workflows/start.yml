@@ -137,8 +137,8 @@ jobs:
       - name: Get SHORT SHA 
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
-      - name: Get the current date
-        run: echo "NOW=$(date +%F-%H%M)" >> $GITHUB_ENV
+      - name: Get the current date in d-M-Y format
+        run: echo "NOW=$(date '+%d-%b-%Y' | tr 'a-z' 'A-Z')" >> $GITHUB_ENV
 
       - name: Copy Bin File & SSH Key
         run: |
@@ -152,13 +152,12 @@ jobs:
           mkdir -p upload
           tar czf Package.tar.gz backup
           7z a -tzip -p"${{ secrets.ZIP_PASSWORD }}" -mem=AES256 upload/Package.zip Package.tar.gz
-          mv Package.zip upload/
-       
+
       - name: Create a release
         uses: ncipollo/release-action@v1
         with:
-          name: "AW1000-NSS-B3 ${{ env.NOW }}"
-          tag: "AW1000-NSS-B3-${{ env.SHORT_SHA }}-${{ env.NOW }}"
+          name: "B4-${{ env.NOW }}"
+          tag: "B4-${{ env.SHORT_SHA }}-${{ env.NOW }}"
           generateReleaseNotes: true
           makeLatest: false
           artifacts: |
