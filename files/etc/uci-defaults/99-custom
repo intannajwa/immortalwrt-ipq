@@ -1,0 +1,28 @@
+#!/bin/sh
+
+uci set firewall.@defaults[0].flow_offloading='0'
+uci set firewall.@defaults[0].flow_offloading_hw='0'
+uci commit firewall
+
+uci delete network.wan6 2>/dev/null
+uci commit network
+
+uci set network.wan='interface'
+uci set network.wan.proto='quectel'
+uci set network.wan.auth='none'
+uci set network.wan.delay='5'
+uci set network.wan.mtu='1500'
+uci set network.wan.pdptype='ipv4v6'
+uci set network.wan.device='/dev/cdc-wdm0'
+uci set network.wan.apn='internet'
+
+uci del_list network.wan.dns 2>/dev/null
+uci add_list network.wan.dns='1.1.1.1'
+uci add_list network.wan.dns='1.0.0.1'
+
+uci commit network
+
+/etc/init.d/firewall restart
+/etc/init.d/network restart
+
+exit 0
