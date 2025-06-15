@@ -29,6 +29,19 @@ jobs:
             echo "Deleting workflow run ID: $run_id"
             gh api --method DELETE /repos/${{ github.repository }}/actions/runs/$run_id
           done
+
+      - name: Delete old releases (keep latest)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name' | head -n 1)
+          gh release list --limit 1000 | awk '{print $1}' | while read REL; do
+            if [ "$REL" != "$LATEST_TAG" ]; then
+              echo "Deleting release: $REL"
+              gh release delete "$REL" -y
+            fi
+          done
+
       - name: Delete old tags (keep latest)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,18 +52,5 @@ jobs:
             if [ "$TAG" != "$LATEST_TAG" ]; then
               echo "Deleting tag: $TAG"
               git push origin :refs/tags/$TAG
-            fi
-          done
-
-      - name: Delete old releases (keep latest)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          LATEST_TAG=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name' | head -n 1)
-          RELEASES=$(gh release list --limit 1000 | awk '{print $1}')
-          for REL in $RELEASES; do
-            if [ "$REL" != "$LATEST_TAG" ]; then
-              echo "Deleting release: $REL"
-              gh release delete "$REL" -y
             fi
           done
