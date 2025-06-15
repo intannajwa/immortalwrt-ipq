@@ -51,6 +51,6 @@ jobs:
           for TAG in $TAGS; do
             if [ "$TAG" != "$LATEST_TAG" ]; then
               echo "Deleting tag: $TAG"
-              git push origin :refs/tags/$TAG
+              gh api --method DELETE repos/${{ github.repository }}/git/refs/tags/$TAG
             fi
           done
