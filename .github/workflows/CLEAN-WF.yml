@@ -35,10 +35,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           LATEST_TAG=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name' | head -n 1)
-          gh release list --limit 1000 | awk '{print $1}' | while read REL; do
-            if [ "$REL" != "$LATEST_TAG" ]; then
-              echo "Deleting release: $REL"
-              gh release delete "$REL" -y
+          echo "Latest tag: $LATEST_TAG"
+
+          # Get all releases including drafts
+          gh api repos/${{ github.repository }}/releases --paginate | jq -c '.' | while read release; do
+            RELEASE_ID=$(echo "$release" | jq -r '.id')
+            TAG_NAME=$(echo "$release" | jq -r '.tag_name')
+
+            if [ "$TAG_NAME" != "$LATEST_TAG" ]; then
+              echo "Deleting release: $TAG_NAME (ID: $RELEASE_ID)"
+              gh api --method DELETE repos/${{ github.repository }}/releases/$RELEASE_ID
+            else
+              echo "Keeping latest release: $TAG_NAME"
             fi
           done
 
@@ -48,6 +56,7 @@ jobs:
         run: |
           TAGS=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name')
           LATEST_TAG=$(echo "$TAGS" | head -n 1)
+
           for TAG in $TAGS; do
             if [ "$TAG" != "$LATEST_TAG" ]; then
               echo "Deleting tag: $TAG"
