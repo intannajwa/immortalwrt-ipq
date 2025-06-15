@@ -37,8 +37,8 @@ jobs:
           LATEST_TAG=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name' | head -n 1)
           echo "Latest tag: $LATEST_TAG"
 
-          # Get all releases including drafts
-          gh api repos/${{ github.repository }}/releases --paginate | jq -c '.' | while read release; do
+          gh api repos/${{ github.repository }}/releases --paginate --jq '.[] | {id, tag_name}' | \
+          jq -c '.' | while read release; do
             RELEASE_ID=$(echo "$release" | jq -r '.id')
             TAG_NAME=$(echo "$release" | jq -r '.tag_name')
 
