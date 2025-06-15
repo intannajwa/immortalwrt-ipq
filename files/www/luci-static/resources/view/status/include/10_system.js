@@ -25,15 +25,14 @@ var callCPUBench = rpc.declare({
 });
 
 var callCPUInfo = rpc.declare({
-    object: 'luci',
-    method: 'getCPUInfo'
+	object: 'luci',
+	method: 'getCPUInfo'
 });
 
-function callCPUUsage() {
-    return L.Request.get(L.url('rpc', 'getCPUUsage')).then(function(res) {
-        return res.json();
-    });
-}
+var callCPUUsage = rpc.declare({
+	object: 'luci',
+	method: 'getCPUUsage'
+});
 
 function callTempInfo() {
     return L.Request.get(L.url('rpc', 'getTempInfo')).then(function(res) {
@@ -87,12 +86,12 @@ return baseclass.extend({
             _('Firmware'), 'DOTYWRT V1.2.B3 - NSS',
             _('Model'), boardinfo.model,
             _('Version'), (L.isObject(boardinfo.release) ? boardinfo.release.description : ''),
-            _('Kernel'), boardinfo.kernel,
+            _('Kernel'),
+                boardinfo.kernel + ' / CPU: ' +
+                ((cpuusage && cpuusage.cpuusage) ? cpuusage.cpuusage : 'N/A') + ' / Temp: ' +
+                ((tempinfo && tempinfo.tempinfo) ? tempinfo.tempinfo : 'N/A'),
             _('Time'), datestr,
-            _('Uptime'), systeminfo.uptime ? '%t'.format(systeminfo.uptime) : null,
-            _('CPU Stat'), 
-                ((cpuusage && cpuusage.cpuusage) ? cpuusage.cpuusage : 'N/A') + ' / ' + 
-                ((tempinfo && tempinfo.tempinfo) ? tempinfo.tempinfo : 'N/A')
+            _('Uptime'), systeminfo.uptime ? '%t'.format(systeminfo.uptime) : null
         ];
 
         var table = E('table', { 'class': 'table' });
