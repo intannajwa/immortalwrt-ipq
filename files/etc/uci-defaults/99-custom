@@ -22,6 +22,31 @@ uci add_list network.wan.dns='1.0.0.1'
 
 uci commit network
 
+mkdir -p /etc/nftables.d
+rm -f /etc/nftables.d/*
+
+cat << 'EOF' > /etc/nftables.d/64ttl.nft
+chain mangle_prerouting_ttl64 {
+  type filter hook prerouting priority 300; policy accept;
+  counter ip ttl set 64
+}
+
+chain mangle_postrouting_ttl64 {
+  type filter hook postrouting priority 300; policy accept;
+  counter ip ttl set 64
+}
+
+chain mangle_prerouting_hoplimit64 {
+  type filter hook prerouting priority 300; policy accept;
+  counter ip6 hoplimit set 64
+}
+
+chain mangle_postrouting_hoplimit64 {
+  type filter hook postrouting priority 300; policy accept;
+  counter ip6 hoplimit set 64
+}
+EOF
+
 /etc/init.d/firewall restart
 /etc/init.d/network restart
 
