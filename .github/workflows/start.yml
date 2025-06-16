@@ -121,7 +121,6 @@ jobs:
           tag: "${{ env.BUILD_NAME }}-${{ env.SHORT_SHA }}-${{ env.NOW }}"
           generateReleaseNotes: true
           makeLatest: false
-          artifacts: upload/Package.zip
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show release link
