@@ -64,7 +64,13 @@ end
 EOF
 
 chmod +x /etc/init.d/passwall2 2>/dev/null
- 
+chmod +x /etc/init.d/tailscale 2>/dev/null
+chmod +x /etc/init.d/* 2>/dev/null
+
+uci set tailscale.@tailscale[0].enabled='1'
+uci commit tailscale
+
+/etc/init.d/tailscale restart
 /etc/init.d/firewall restart
 /etc/init.d/network restart
 
