@@ -83,7 +83,7 @@ return baseclass.extend({
         }
 
         var fields = [
-            _('Firmware'), 'DOTYWRT V1.2.B3 - NSS',
+            _('Firmware'), 'DOTYWRT V1.2.B1 - IMMO',
             _('Model'), boardinfo.model,
             _('Version'), (L.isObject(boardinfo.release) ? boardinfo.release.description : ''),
             _('Kernel'),
