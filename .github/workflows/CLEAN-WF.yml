@@ -3,7 +3,6 @@ name: Cleanup Old Workflows
 on:
   workflow_dispatch:
 
-# Ensure correct permissions are granted to the GITHUB_TOKEN
 permissions:
   actions: write
   contents: write
@@ -11,42 +10,39 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Kuala_Lumpur
 
     steps:
-      - name: Install GitHub CLI
+      - name: Show current Malaysia time
+        run: |
+          echo "🇲🇾 Current Malaysia Time: $(date)"
+
+      - name: Download GitHub CLI
         run: |
           curl -sSL https://github.com/cli/cli/releases/download/v2.47.0/gh_2.47.0_linux_amd64.tar.gz | tar -xz
           sudo cp gh_2.47.0_linux_amd64/bin/gh /usr/local/bin/
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Delete old workflow runs (keep latest)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Authenticate with GITHUB_TOKEN
         run: |
-          echo "Fetching workflow runs..."
-          RUN_IDS=$(gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/actions/runs?per_page=100 | \
-          jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1:][] | .id')
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-          if [ -z "$RUN_IDS" ]; then
-            echo "No old workflow runs found."
-          else
-            echo "$RUN_IDS" | while read run_id; do
-              echo "Deleting workflow run ID: $run_id"
-              gh api --method DELETE /repos/${{ github.repository }}/actions/runs/$run_id || echo "❌ Failed to delete run $run_id"
-            done
-          fi
+      - name: Delete all but latest workflow runs
+        run: |
+          gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/actions/runs?per_page=100 | \
+          jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1:][] | .id' | \
+          while read run_id; do
+            echo "Deleting workflow run ID: $run_id"
+            gh api --method DELETE /repos/${{ github.repository }}/actions/runs/$run_id
+          done
 
       - name: Delete old releases (keep latest)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Fetching latest tag..."
           LATEST_TAG=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name' | head -n 1)
-          echo "Latest tag is: $LATEST_TAG"
+          echo "Latest tag: $LATEST_TAG"
 
-          echo "Checking releases..."
           gh api repos/${{ github.repository }}/releases --paginate --jq '.[] | {id, tag_name}' | \
           jq -c '.' | while read release; do
             RELEASE_ID=$(echo "$release" | jq -r '.id')
@@ -54,9 +50,9 @@ jobs:
 
             if [ "$TAG_NAME" != "$LATEST_TAG" ]; then
               echo "Deleting release: $TAG_NAME (ID: $RELEASE_ID)"
-              gh api --method DELETE repos/${{ github.repository }}/releases/$RELEASE_ID || echo "❌ Failed to delete release $RELEASE_ID"
+              gh api --method DELETE repos/${{ github.repository }}/releases/$RELEASE_ID
             else
-              echo "✅ Keeping latest release: $TAG_NAME"
+              echo "Keeping latest release: $TAG_NAME"
             fi
           done
 
@@ -64,15 +60,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Fetching tags..."
           TAGS=$(gh api repos/${{ github.repository }}/tags --paginate --jq '.[].name')
           LATEST_TAG=$(echo "$TAGS" | head -n 1)
 
           for TAG in $TAGS; do
             if [ "$TAG" != "$LATEST_TAG" ]; then
               echo "Deleting tag: $TAG"
-              gh api --method DELETE repos/${{ github.repository }}/git/refs/tags/$TAG || echo "❌ Failed to delete tag $TAG"
-            else
-              echo "✅ Keeping latest tag: $TAG"
+              gh api --method DELETE repos/${{ github.repository }}/git/refs/tags/$TAG
             fi
           done
